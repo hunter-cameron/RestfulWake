@@ -88,9 +88,23 @@ response.form_label_separator = ''
 # host names must be a list of allowed host names (glob syntax allowed)
 auth = Auth(db, host_names=configuration.get('host.names'))
 
+# define the table to use with OAuth
+auth_table = db.define_table(
+    auth.settings.table_user_name,
+    Field('first_name', length=128, default=""),
+    Field('last_name', length=128, default=""),
+    Field('username', length=128, default="", unique=True),
+    #Field('password', 'password', length=256, readable=False, label='Password'),
+    Field('registration_key', length=128, default="",
+          writable=False, readable=False))
+
+auth_table.username.requires = IS_NOT_IN_DB(db, auth_table.username)
+
+
 # -------------------------------------------------------------------------
 # create all tables needed by auth, maybe add a list of extra fields
 # -------------------------------------------------------------------------
+# add extra fields to store token details
 auth.settings.extra_fields['auth_user'] = []
 auth.define_tables(username=False, signature=False)
 
