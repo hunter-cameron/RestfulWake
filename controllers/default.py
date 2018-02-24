@@ -7,9 +7,9 @@
 # ---- example index page ----
 import datetime
 
-from fitbit import Fitbit
-# update teh API version
-Fitbit.API_VERSION = 1.2
+
+from fitbit_helper import FitBitHelper
+
 from collections import Counter
 
 def _update_token(token):
@@ -86,7 +86,7 @@ def _parse_sleep_history(log):
     sleep_logs = []
     for sleep_event in log['sleep']:
         # look for the main sleep
-        # history doesn't have isMainSleep so it is possble to have multiple entries per day
+        # history doesn't have isMainSleep so it is possible to have multiple entries per day
         # however, often naps will be recorded as "classic" types because they are less that ~3 hours
         if sleep_event['type'] == "stages":
             log = SleepLog(sleep_event['startTime'], sleep_event['endTime'], sleep_event['levels']['data'])
@@ -129,13 +129,10 @@ def _parse_sleep_log(log):
 def test():
     sleep_date = datetime.date(2018, 2, 12)
 
-    fb = _get_fitbit()
+    fbh = FitBitHelper(auth.user_id)
 
-    # get a two week sleep history
-    today = datetime.datetime.today()
-    old = today - datetime.timedelta(days=14)
-    sleep_history = fb.time_series("sleep", base_date=old, end_date=today)
-    _parse_sleep_history(sleep_history)
+    sleep_history = fbh.get_sleep_history()
+
 
 
     #sleep_log = fb.get_sleep(sleep_date)

@@ -1,6 +1,7 @@
 
 # from: http://web2py.com/books/default/chapter/29/09/access-control
 from gluon.contrib.login_methods.oauth20_account import OAuthAccount
+from gluon import current
 from fitbit import Fitbit
 
 # Define oauth application id and secret.
@@ -25,13 +26,11 @@ def update_token(token):
     print("Updating token")
 
     # update the user dict
-    user = db(db.auth_user.username == token['user_id']).select()
+    user = db(db.auth_user.username == token['user_id']).select().first()
 
     if user:
         user.update(
-            access_token=token['access_token'],
-            refresh_token=token['refresh_token'],
-            expires_at=token['expires_at']
+            token=token
         )
     else:
         print("Token refreshed but user not found!!!")
@@ -60,10 +59,11 @@ class FitbitOAuth(object):
         else:
             self.redirect_uri = redirect_uri
 
-        session.client_id = self.client_id
-        session.client_secret = self.client_secret
+        current.client_id = self.client_id
+        current.client_secret = self.client_secret
 
     def get_profile(self, token):
+        """ Returns a user profile from a token """
         fb = Fitbit(self.client_id, self.client_secret,
                     access_token=token['access_token'],
                     refresh_token=token['refresh_token'],
@@ -75,7 +75,8 @@ class FitbitOAuth(object):
 
         return dict(first_name=profile['user']['firstName'],
                     last_name=profile['user']['lastName'],
-                    username=token['user_id'])
+                    username=token['user_id'],
+                    token=token)
 #                    access_token=token['access_token'],
 #                    refresh_token=token['refresh_token'],
 #                    expires_at=token['expires_at'])
@@ -93,20 +94,21 @@ class FitbitOAuth(object):
             return self.get_profile(session.token)
 
         # handle getting access tokens
+        fb = Fitbit(self.client_id, self.client_secret)
         code = request.vars.code
         if code:
             print("Auth code found: Getting access token")
-            self.fitbit.client.fetch_access_token(code=code, redirect_uri=self.redirect_uri)
+            fb.client.fetch_access_token(code=code, redirect_uri=self.redirect_uri)
 
             # store token for later
-            session.token = self.fitbit.client.session.token
+            session.token = fb.client.session.token
 
             return self.get_profile(session.token)
 
         else:
             # handle getting initial user auth
             print("Blank slate: Getting authorization code")
-            url, _ = self.fitbit.client.authorize_token_url(scope=['profile', 'sleep', 'settings'], redirect_uri=self.redirect_uri)
+            url, _ = fb.client.authorize_token_url(scope=['profile', 'sleep', 'settings'], redirect_uri=self.redirect_uri)
 
             # redirect the user to fitbit
             redirect(url)

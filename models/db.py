@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from gluon.custom_import import track_changes
+track_changes(True)
+
+from gluon import current
 
 # -------------------------------------------------------------------------
 # AppConfig configuration made easy. Look inside private/appconfig.ini
@@ -50,6 +54,8 @@ else:
     # session.connect(request, response, db = MEMDB(Client()))
     # ---------------------------------------------------------------------
 
+current.db = db
+
 # -------------------------------------------------------------------------
 # by default give a view/generic.extension to all actions from localhost
 # none otherwise. a pattern can be 'controller/function.extension'
@@ -94,9 +100,8 @@ auth_table = db.define_table(
     Field('first_name', length=128, default=""),
     Field('last_name', length=128, default=""),
     Field('username', length=128, default="", unique=True),
-    #Field('password', 'password', length=256, readable=False, label='Password'),
-    Field('registration_key', length=128, default="",
-          writable=False, readable=False))
+    Field('token', type="json")
+)
 
 auth_table.username.requires = IS_NOT_IN_DB(db, auth_table.username)
 
